@@ -1,4 +1,4 @@
-"""Generate the app icons in app/icons/ (poker chip on the app's dark background).
+"""Generate the app icons in icons/ (poker chip on the app's dark background).
 
 Usage: pip install pillow && python3 tools/make-icons.py
 """
@@ -10,7 +10,7 @@ BG = (16, 18, 22)        # --bg   #101216
 RED = (224, 38, 58)      # --accent #e0263a
 DARK_RED = (170, 22, 40)
 WHITE = (238, 240, 244)  # --text #eef0f4
-OUT = Path(__file__).resolve().parent.parent / "app" / "icons"
+OUT = Path(__file__).resolve().parent.parent / "icons"
 SS = 4  # supersampling factor for smooth edges
 
 

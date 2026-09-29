@@ -6,31 +6,29 @@ Nothing is uploaded; the website only serves the app itself.
 
 ## Layout
 
+The repo root is the website, so GitHub Pages serves the app whether its
+source is set to "Deploy from a branch" or "GitHub Actions".
+
 ```
-app/                    <- everything that gets published (the website root)
-  index.html            the whole app (HTML, CSS and JS in one file)
-  manifest.webmanifest  home-screen name, colors and icons
-  sw.js                 service worker: caches the app for offline use
-  icons/                app icons (home screen, manifest)
-  .nojekyll
+index.html              the whole app (HTML, CSS and JS in one file)
+manifest.webmanifest    home-screen name, colors and icons
+sw.js                   service worker: caches the app for offline use
+icons/                  app icons (home screen, manifest)
+.nojekyll               serve files as-is (no Jekyll processing)
 docs/HOW-TO-INSTALL.txt original install notes
-tools/make-icons.py     regenerates app/icons/ (needs Pillow)
-.github/workflows/pages.yml  deploys app/ to GitHub Pages
+tools/make-icons.py     regenerates icons/ (needs Pillow)
+.github/workflows/pages.yml  deploys the site to GitHub Pages
 ```
 
-## Publish it (one time)
+## Publish it
 
-The iPhone needs to load the app once from an `https://` address.
+The site is live at https://isakbb.github.io/PokerTrackerIphoneWebApp/ and
+updates on every push to `main`. Recommended Pages setting:
+**Settings -> Pages -> Source: GitHub Actions** (the repo must be public on a
+free account).
 
-**GitHub Pages (this repo):**
-1. Merge this branch into `main`.
-2. On GitHub: **Settings -> Pages -> Build and deployment -> Source: GitHub Actions**.
-3. The *Deploy to GitHub Pages* workflow runs on every push to `main`
-   (or run it by hand under **Actions**). The link is
-   `https://<your-username>.github.io/PokerTrackerIphoneWebApp/`.
-   The repository must be public for Pages on a free account.
-
-**Netlify (alternative):** drag the `app/` folder onto https://app.netlify.com/drop.
+**Netlify (alternative):** drag a folder with `index.html`,
+`manifest.webmanifest`, `sw.js` and `icons/` onto https://app.netlify.com/drop.
 
 ## Install on the iPhone
 
@@ -48,13 +46,13 @@ then; **Import backup** restores it.
 
 ## Updating the app
 
-Edit files in `app/`, bump `CACHE` in `app/sw.js` (e.g. `player-notes-v1.3`)
+Edit the app files, bump `CACHE` in `sw.js` (e.g. `player-notes-v1.5`)
 so phones fetch the new version, and push to `main`. The app picks up the
 update the next time it is opened with internet.
 
 ## Run locally
 
 ```
-cd app && python3 -m http.server 8000
+python3 -m http.server 8000
 ```
 Then open http://localhost:8000 (the service worker works on localhost).
