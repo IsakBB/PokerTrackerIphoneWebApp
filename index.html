@@ -241,12 +241,18 @@ textarea.inp{min-height:180px;resize:vertical;line-height:1.45}
 
   <!-- LABELS / SETTINGS -->
   <section id="view-labels" class="view" style="display:none;flex-direction:column;flex:1;min-height:0">
-    <header><div class="title-row"><h1>Labels &amp; data</h1></div></header>
+    <header><div class="title-row"><h1>Labels, tags &amp; data</h1></div></header>
     <main>
       <div class="sec">
         <h3>Color labels</h3>
         <div id="labelRows"></div>
         <button class="setrow" id="addLabel" style="color:var(--accent2);font-weight:600">＋ Add label</button>
+      </div>
+      <div class="sec" id="tagSec">
+        <h3>Note quick tags</h3>
+        <div id="tagRows"></div>
+        <button class="setrow" id="addTag" style="color:var(--accent2);font-weight:600">＋ Add quick tag</button>
+        <button class="setrow" id="resetTags"><div class="t">Reset to defaults<span>Tap a tag in a player's notes to type it in</span></div></button>
       </div>
       <div class="sec">
         <h3>Where your notes are saved</h3>
@@ -301,10 +307,17 @@ const DEFAULT_LABELS=[
   {id:"l7",color:"#D6409F",name:"Tilts easily"},
   {id:"l8",color:"#8B8D98",name:"Unknown / new"}
 ];
+const DEFAULT_TAGS=[
+  {id:"t1",text:"3bets light"},
+  {id:"t2",text:"limp-calls"},
+  {id:"t3",text:"overfolds to aggression"},
+  {id:"t4",text:"never bluffs river"},
+  {id:"t5",text:"tell: "}
+];
 const hasNative=typeof window.Native!=="undefined";
 const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 const isStandalone=()=>window.navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
-let S={version:1,labels:DEFAULT_LABELS.slice(),players:[],table:{size:9,hero:0,seats:[],dealer:"right"},sort:"recent",savedAt:0,lastBackup:0,backupSnooze:0};
+let S={version:1,labels:DEFAULT_LABELS.slice(),tags:DEFAULT_TAGS.slice(),players:[],table:{size:9,hero:0,seats:[],dealer:"right"},sort:"recent",savedAt:0,lastBackup:0,backupSnooze:0};
 
 /* Storage.
    Android app: JSON file in the app's private storage (+ optional auto-save copy to a file you pick).
@@ -331,6 +344,7 @@ async function load(){
   }
   if(d) S=Object.assign(S,d);
   if(!Array.isArray(S.labels)) S.labels=DEFAULT_LABELS.slice();
+  if(!Array.isArray(S.tags)) S.tags=DEFAULT_TAGS.slice();
   if(!S.table) S.table={size:9,hero:0,seats:[]};
   if(!Array.isArray(S.table.seats)) S.table.seats=[];
   if(S.table.dealer!=="left"&&S.table.dealer!=="right") S.table.dealer="right";
@@ -528,11 +542,8 @@ function editPlayer(id,opts={}){
       <textarea class="inp" id="e-note" placeholder="Tendencies, tells, hands you've seen…">${esc(p.note)}</textarea>
       <div class="note-tools">
         <button data-ins="stamp">＋ Date/time line</button>
-        <button data-ins="3bets light">3bets light</button>
-        <button data-ins="limp-calls">limp-calls</button>
-        <button data-ins="overfolds to aggression">overfolds</button>
-        <button data-ins="never bluffs river">no river bluffs</button>
-        <button data-ins="tell: ">tell:</button>
+        ${S.tags.map(t=>`<button data-ins="${esc(t.text)}">${esc(t.text.trim())}</button>`).join("")}
+        <button data-x="tags" style="color:var(--accent2)">✎ Edit tags</button>
       </div>
       ${isNew?"":`<div class="meta">Added ${new Date(p.created).toLocaleDateString()} · updated ${ago(p.updated)}${/\d/.test(ago(p.updated))?" ago":""}</div>
       <div style="margin-top:22px"><button class="btn danger block" data-x="del">Delete player</button></div>`}
@@ -555,9 +566,10 @@ function editPlayer(id,opts={}){
     const ins=e.target.closest("[data-ins]");
     if(ins){ const ta=$("#e-note"); const v=ins.dataset.ins;
       if(v==="stamp"){ ta.value=(ta.value&&!ta.value.endsWith("\n")?ta.value+"\n":ta.value)+"["+stamp()+"] "; }
-      else { const cur=ta.value; const sep=!cur||/[\s\n]$/.test(cur)?"":(v.startsWith("tell")?"\n":", "); ta.value=cur+sep+v; }
+      else { const cur=ta.value; const sep=!cur||/[\s\n]$/.test(cur)?"":(/:\s*$/.test(v)?"\n":", "); ta.value=cur+sep+v; }
       ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); return; }
     const x=e.target.closest("[data-x]"); if(!x) return;
+    if(x.dataset.x==="tags"){ closeSheet(); setTab("labels"); setTimeout(()=>$("#tagSec").scrollIntoView({block:"start",behavior:"smooth"}),50); return; }
     if(x.dataset.x==="close"||x.dataset.x==="done"){ closeSheet(); if(x.dataset.x==="done") toast(isNew?"Player added":"Saved"); }
     else if(x.dataset.x==="del"){
       if(await confirmDlg("Delete player?",`"${p.name}" and their notes will be removed.`,"Delete",true)){
@@ -708,6 +720,40 @@ function editLabel(id){
   };
 }
 
+// ---------- note quick tags ----------
+function renderTags(){
+  $("#tagRows").innerHTML=S.tags.map(t=>`<button class="lrow" style="width:100%;text-align:left" data-tedit="${t.id}">
+    <span class="ln"><b>${esc(t.text.trim())}</b></span><span class="chev">›</span></button>`).join("")||`<div style="color:var(--faint);padding:10px 0">No quick tags</div>`;
+}
+$("#tagRows").addEventListener("click",e=>{ const b=e.target.closest("[data-tedit]"); if(b) editTag(b.dataset.tedit); });
+$("#addTag").addEventListener("click",()=>editTag(null));
+$("#resetTags").addEventListener("click",async()=>{
+  if(await confirmDlg("Reset quick tags?","Your custom tags are replaced by the defaults. Player notes are not changed.","Reset",true)){
+    S.tags=DEFAULT_TAGS.slice(); save(); render(); toast("Quick tags reset"); }
+});
+function editTag(id){
+  const isNew=!id; const t=isNew?{id:"t"+uid(),text:""}:S.tags.find(x=>x.id===id); if(!t) return;
+  const idx=S.tags.indexOf(t);
+  openSheet(`<div class="grab"></div><div class="sheet-body">
+    <label class="f">Quick tag text</label><input class="inp" id="t-text" value="${esc(t.text)}" placeholder="e.g. overfolds river, 3b light" autocomplete="off">
+    <div class="meta">Tip: end it with “:” (like “tell:”) to start a new line in the note.</div>
+    <div class="row" style="margin-top:20px">
+      ${isNew?"":`<button class="btn danger" data-a="del">Delete</button>`}
+      ${!isNew&&idx>0?`<button class="btn" data-a="up">↑</button>`:""}
+      ${!isNew&&idx<S.tags.length-1?`<button class="btn" data-a="down">↓</button>`:""}
+      <button class="btn primary" style="flex:1" data-a="save">${isNew?"Add tag":"Save"}</button>
+    </div></div>`);
+  if(isNew) setTimeout(()=>$("#t-text").focus(),250);
+  $("#sheet").onclick=e=>{
+    const a=e.target.closest("[data-a]"); if(!a) return;
+    if(a.dataset.a==="save"){ let tx=$("#t-text").value.replace(/^\s+/,"").replace(/\s+$/,""); if(!tx){ toast("Type the tag text"); return; }
+      if(tx.endsWith(":")) tx+=" ";
+      t.text=tx; if(isNew) S.tags.push(t); save(); closeSheet(); render(); }
+    else if(a.dataset.a==="up"||a.dataset.a==="down"){ const j=idx+(a.dataset.a==="up"?-1:1); S.tags.splice(idx,1); S.tags.splice(j,0,t); save(); closeSheet(); render(); }
+    else if(a.dataset.a==="del"){ S.tags=S.tags.filter(x=>x.id!==t.id); save(); closeSheet(); render(); toast("Tag removed"); }
+  };
+}
+
 // ---------- backup ----------
 async function doExport(){
   const d=new Date(); const fn=`player-notes-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}.json`;
@@ -813,12 +859,12 @@ window.onImported=async function(text){
   let d; try{ d=JSON.parse(text); }catch(e){ toast("That file isn't a valid backup"); return; }
   if(!d||!Array.isArray(d.players)||!Array.isArray(d.labels)){ toast("That file isn't a valid backup"); return; }
   if(!await confirmDlg("Restore backup?",`Replace your current ${S.players.length} players with ${d.players.length} from the backup?`,"Restore",true)) return;
-  S={version:1,labels:d.labels,players:d.players,table:Object.assign({size:9,hero:0,seats:[],dealer:"right"},d.table||{}),sort:d.sort||"recent",savedAt:0,lastBackup:d.lastBackup||0,backupSnooze:0};
+  S={version:1,labels:d.labels,tags:Array.isArray(d.tags)?d.tags:S.tags,players:d.players,table:Object.assign({size:9,hero:0,seats:[],dealer:"right"},d.table||{}),sort:d.sort||"recent",savedAt:0,lastBackup:d.lastBackup||0,backupSnooze:0};
   filter="all"; save(true); render(); toast(`Restored ${d.players.length} players`);
 };
 
 // ---------- boot ----------
-function render(){ if(tab==="players") renderList(); else if(tab==="table") renderTable(); else { renderLabels(); renderStorage(); } }
+function render(){ if(tab==="players") renderList(); else if(tab==="table") renderTable(); else { renderLabels(); renderTags(); renderStorage(); } }
 load().then(()=>{ render(); askPersist(); autoInstallGuide(); });
 if(!hasNative&&"serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost")){
   window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));

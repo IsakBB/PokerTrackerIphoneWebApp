@@ -1,6 +1,6 @@
 // Offline support: the whole app is cached on first visit, so it opens without signal at the casino.
 // Your notes are NOT stored here — they live in the phone's app storage (IndexedDB + localStorage).
-const CACHE = "player-notes-v1.4";
+const CACHE = "player-notes-v1.5";
 const FILES = ["./", "index.html", "manifest.webmanifest", "icons/apple-touch-icon.png", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png"];
 
 self.addEventListener("install", e => {
