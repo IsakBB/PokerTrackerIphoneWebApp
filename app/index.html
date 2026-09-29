@@ -734,14 +734,35 @@ $("#importBtn").addEventListener("click",()=>{
 // ---------- install + storage status ----------
 let deferredInstall=null;
 window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredInstall=e; render(); });
+// Safari is the only iPhone browser that installs web apps with notes kept in the home-screen app.
+const notSafari=isIOS&&/CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|GSA\/|FBAN|FBAV|Instagram|Messenger|Snapchat|LinkedInApp|Line\/|MicroMessenger|Twitter/i.test(navigator.userAgent);
+const SHARE_ICO=`<svg class="share-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>`;
 function installApp(){
   if(deferredInstall){ deferredInstall.prompt(); deferredInstall.userChoice.finally(()=>{ deferredInstall=null; render(); }); return; }
-  openSheet(`<div class="grab"></div><div class="sheet-body">
-    <label class="f">Add to Home Screen</label>
-    <p style="margin:0 0 12px">1. Tap the <b>Share</b> button <svg class="share-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg> in Safari's toolbar.</p>
-    <p style="margin:0 0 12px">2. Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.</p>
-    <p style="margin:0 0 18px">3. Open <b>Player Notes</b> from your home screen from now on. It works offline and your notes are kept on the phone.</p>
-    <p style="margin:0;color:var(--muted);font-size:13px">Notes you add here in Safari stay in Safari and don't carry over to the home-screen app. Add it first, or use Export/Import to move them.</p></div>`);
+  const P=(t,last)=>`<p style="margin:0 0 ${last?18:12}px">${t}</p>`;
+  const body=notSafari
+    ?`<label class="f">Open this page in Safari first</label>
+      ${P("This browser can't add Player Notes to your Home Screen.")}
+      ${P("1. Tap <b>Copy link</b> below.")}
+      ${P("2. Open <b>Safari</b>, tap the address bar, paste and go.")}
+      ${P("3. Tap <b>Show me how</b> there and follow the steps.",1)}
+      <button class="btn primary" id="copyLink" style="width:100%">Copy link</button>`
+    :`<label class="f">Install Player Notes (takes 10 seconds)</label>
+      ${P(`1. Tap the <b>Share</b> button ${SHARE_ICO} in Safari's toolbar. On newer iOS it's under the <b>•••</b> button next to the address bar.`)}
+      ${P("2. Scroll down and tap <b>Add to Home Screen</b>. If you see <b>Open as Web App</b>, leave it on.")}
+      ${P("3. Tap <b>Add</b>.")}
+      ${P("4. From now on, open <b>Player Notes</b> from the icon on your home screen. It works offline and your notes stay private on this phone.",1)}
+      <p style="margin:0;color:var(--muted);font-size:13px">Notes you add here in Safari stay in Safari and don't carry over to the home-screen app, so install it first. Deleting the icon deletes its notes, so use <b>Save backup to Files</b> (Labels tab) now and then.</p>`;
+  const sh=openSheet(`<div class="grab"></div><div class="sheet-body">${body}</div>`);
+  const c=sh.querySelector("#copyLink");
+  if(c) c.onclick=()=>{ const u=location.href.split("#")[0];
+    (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>toast("Link copied. Now paste it in Safari"),()=>prompt("Copy this link and open it in Safari:",u)); };
+}
+// Show the guide by itself the first time the link is opened on an iPhone.
+function autoInstallGuide(){
+  if(hasNative||!isIOS||isStandalone()) return;
+  try{ if(localStorage.getItem("pn_install_guide")) return; localStorage.setItem("pn_install_guide","1"); }catch(e){}
+  setTimeout(installApp,600);
 }
 function banners(){
   let h="";
@@ -798,7 +819,7 @@ window.onImported=async function(text){
 
 // ---------- boot ----------
 function render(){ if(tab==="players") renderList(); else if(tab==="table") renderTable(); else { renderLabels(); renderStorage(); } }
-load().then(()=>{ render(); askPersist(); });
+load().then(()=>{ render(); askPersist(); autoInstallGuide(); });
 if(!hasNative&&"serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost")){
   window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 }
