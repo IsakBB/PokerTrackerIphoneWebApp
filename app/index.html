@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Player Notes</title>
+<meta name="theme-color" content="#101216">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Player Notes">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<style>
+:root{
+  --bg:#101216; --surface:#181b21; --surface2:#20242c; --surface3:#2a2f39;
+  --line:#2c313b; --text:#eef0f4; --muted:#9aa1ad; --faint:#6b7280;
+  --accent:#e0263a; --accent2:#ff4757; --ok:#2fbf71; --felt:#0f5a3c; --felt2:#0b4430;
+  --radius:14px;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+  --sal:env(safe-area-inset-left,0px); --sar:env(safe-area-inset-right,0px);
+  --vh:100vh;
+}
+@supports (height:100dvh){ :root{--vh:100dvh} }
+html{touch-action:manipulation;-webkit-text-size-adjust:100%}
+button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,textarea{font:inherit;color:var(--text)}
+#app{display:flex;flex-direction:column;height:100%}
+header{padding:calc(14px + var(--sat)) calc(16px + var(--sar)) 8px calc(16px + var(--sal));background:var(--bg)}
+.title-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+h1{font-size:20px;margin:0;font-weight:700;letter-spacing:.2px}
+h1 small{color:var(--muted);font-weight:500;font-size:13px;margin-left:6px}
+.icon-btn{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:var(--surface);color:var(--muted)}
+.icon-btn svg{width:20px;height:20px}
+.search{margin-top:10px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);
+  border-radius:12px;padding:0 12px;height:44px}
+.search svg{width:18px;height:18px;color:var(--faint);flex:none}
+.search input{flex:1;background:none;border:0;outline:0;height:100%;font-size:16px}
+.search .clear{color:var(--faint);font-size:20px;padding:4px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 16px 6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:16px;
+  background:var(--surface);border:1px solid var(--line);color:var(--muted);font-size:13px;white-space:nowrap}
+.chip.on{background:var(--surface3);color:var(--text);border-color:#4a5160}
+.chip .n{color:var(--faint);font-size:12px}
+.dot{width:12px;height:12px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.dot.none{background:transparent;box-shadow:inset 0 0 0 2px var(--faint)}
+main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px calc(12px + var(--sar)) calc(110px + var(--sab)) calc(12px + var(--sal))}
+.sortbar{display:flex;justify-content:space-between;align-items:center;padding:4px 4px 8px;color:var(--faint);font-size:12px}
+.sortbar button{color:var(--muted);font-size:12px}
+.card{display:flex;gap:12px;background:var(--surface);border-radius:var(--radius);padding:12px;margin-bottom:8px;
+  position:relative;overflow:hidden;border:1px solid transparent}
+.card:active{background:var(--surface2)}
+.card .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+.tagbtn{width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:700;font-size:15px;
+  color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4);box-shadow:inset 0 0 0 2px rgba(255,255,255,.15)}
+.tagbtn.none{background:var(--surface3);color:var(--muted);box-shadow:inset 0 0 0 2px var(--line);text-shadow:none}
+.card .body{flex:1;min-width:0}
+.card .top{display:flex;align-items:baseline;gap:8px}
+.card .name{font-weight:650;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .when{margin-left:auto;color:var(--faint);font-size:12px;flex:none}
+.card .lbl{font-size:12px;font-weight:600;margin-top:1px}
+.card .desc{color:var(--muted);font-size:13px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .note{color:#c9ced6;font-size:13.5px;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;white-space:pre-wrap;word-break:break-word}
+.empty{text-align:center;color:var(--muted);padding:60px 24px}
+.empty b{display:block;color:var(--text);font-size:17px;margin-bottom:6px}
+.fab{position:fixed;right:calc(18px + var(--sar));bottom:calc(84px + var(--sab));width:58px;height:58px;border-radius:18px;background:var(--accent);
+  color:#fff;display:grid;place-items:center;box-shadow:0 8px 24px rgba(224,38,58,.35);z-index:5}
+.fab svg{width:28px;height:28px}
+nav{position:fixed;left:0;right:0;bottom:0;height:calc(64px + var(--sab));padding-bottom:var(--sab);background:rgba(16,18,22,.96);border-top:1px solid var(--line);
+  display:flex;z-index:6;backdrop-filter:blur(8px)}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--faint);font-size:11px;font-weight:600}
+nav button svg{width:22px;height:22px}
+nav button.on{color:var(--text)}
+nav button.on svg{color:var(--accent2)}
+
+/* sheets */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;opacity:0;pointer-events:none;transition:opacity .18s}
+.scrim.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:92%;background:var(--surface);border-radius:20px 20px 0 0;z-index:21;
+  transform:translateY(105%);transition:transform .22s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column}
+.sheet.show{transform:none}
+.sheet.full{top:0;max-height:none;border-radius:0;padding-top:var(--sat)}
+.sheet-body{padding-bottom:calc(20px + var(--sab))!important}
+.quick{padding-bottom:calc(22px + var(--sab))!important}
+.sheet-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.sheet-head h2{font-size:17px;margin:0;flex:1}
+.sheet-body{overflow-y:auto;padding:14px 16px 20px;flex:1}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--surface3);margin:8px auto 0}
+.btn{height:42px;padding:0 16px;border-radius:12px;background:var(--surface3);font-weight:600;font-size:14px}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.danger{background:transparent;color:var(--accent2);border:1px solid #5a2630}
+.btn.ghost{background:transparent;color:var(--muted)}
+.btn.block{width:100%}
+label.f{display:block;font-size:12px;color:var(--muted);font-weight:600;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.5px}
+label.f:first-child{margin-top:0}
+.inp{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:11px 12px;outline:0;font-size:16px}
+.inp:focus{border-color:#555d6c}
+textarea.inp{min-height:180px;resize:vertical;line-height:1.45}
+.labelgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.lopt{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:12px;background:var(--bg);
+  border:2px solid transparent;font-size:12px;color:var(--muted);text-align:center;line-height:1.2}
+.lopt .sw{width:30px;height:30px;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.15)}
+.lopt .sw.none{background:transparent;box-shadow:inset 0 0 0 2px var(--faint)}
+.lopt.on{border-color:var(--text);color:var(--text);background:var(--surface2)}
+.note-tools{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.note-tools button{font-size:12px;padding:6px 10px;border-radius:8px;background:var(--surface2);color:var(--muted)}
+.meta{color:var(--faint);font-size:12px;margin-top:16px}
+.row{display:flex;gap:10px;align-items:center}
+
+/* quick label popover */
+.quick{padding:6px 16px 22px}
+.quick .who{font-weight:650;margin:10px 0 12px;font-size:16px}
+.quick .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.quick .opt{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:var(--muted);text-align:center;line-height:1.15}
+.quick .opt .sw{width:46px;height:46px;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.15);display:grid;place-items:center}
+.quick .opt .sw.none{background:transparent;box-shadow:inset 0 0 0 2px var(--faint)}
+.quick .opt.on .sw{outline:3px solid var(--text);outline-offset:2px}
+
+/* table view */
+.table-wrap{padding:8px 4px 0}
+.table-tools{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:0 4px 6px;flex-wrap:wrap}
+.seg{display:flex;background:var(--surface);border-radius:10px;padding:3px;border:1px solid var(--line)}
+.seg button{padding:6px 11px;border-radius:8px;font-size:13px;color:var(--muted);font-weight:600}
+.seg button.on{background:var(--surface3);color:var(--text)}
+.felt{position:relative;width:100%;height:calc(var(--vh) - 250px - var(--sat) - var(--sab));min-height:380px;max-width:520px;margin:0 auto}
+.felt .oval{position:absolute;left:18%;right:18%;top:11%;bottom:11%;border-radius:999px;
+  background:radial-gradient(ellipse at center,var(--felt) 0%,var(--felt2) 80%);
+  box-shadow:0 0 0 10px #3a2618,0 0 0 12px #1e140d,inset 0 0 40px rgba(0,0,0,.45)}
+.felt .center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:rgba(255,255,255,.35);
+  font-size:12px;font-weight:700;letter-spacing:2px;text-align:center;text-transform:uppercase}
+.seat{position:absolute;width:84px;height:84px;justify-content:flex-start;transform:translate(-50%,-28px);display:flex;flex-direction:column;align-items:center;gap:4px}
+.seat .rw{position:relative}
+.dealer{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;z-index:2}
+.dealer .tray{width:44px;height:58px;border-radius:10px;background:#2a1a10;box-shadow:0 0 0 2px #6b4a2e,0 3px 10px rgba(0,0,0,.45);
+  display:flex;flex-direction:column;justify-content:center;gap:3px;padding:0 7px}
+.dealer .tray i{display:block;height:5px;border-radius:3px}
+.dealer .dl{font-size:10px;font-weight:800;letter-spacing:1.5px;color:#111;background:#f2f2f2;border-radius:8px;padding:2px 7px;
+  box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.seat .ring{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:17px;color:#fff;
+  text-shadow:0 1px 2px rgba(0,0,0,.45);box-shadow:0 3px 10px rgba(0,0,0,.4),inset 0 0 0 3px rgba(255,255,255,.18);background:var(--surface3)}
+.seat.vacant .ring{background:rgba(24,27,33,.9);color:var(--faint);box-shadow:inset 0 0 0 2px #3b414d;font-size:22px;font-weight:400;text-shadow:none}
+.seat.hero .ring{background:#2b3140;box-shadow:inset 0 0 0 2px #7d8697;color:#cfd5df;font-size:12px}
+.seat .nm{font-size:12px;font-weight:600;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  background:rgba(16,18,22,.85);padding:1px 7px;border-radius:8px}
+.seat .num{position:absolute;top:-6px;right:-8px;font-size:10px;color:var(--faint);background:var(--bg);border-radius:8px;padding:0 5px}
+.seat.vacant .nm{color:var(--faint);background:transparent}
+
+/* labels / settings */
+.sec{background:var(--surface);border-radius:var(--radius);padding:4px 14px;margin-bottom:14px}
+.sec h3{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin:14px 2px 8px}
+.lrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.lrow:first-of-type{border-top:0}
+.lrow .sw{width:30px;height:30px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 2px rgba(255,255,255,.15)}
+.lrow .ln{flex:1;min-width:0}
+.lrow .ln b{display:block;font-weight:600}
+.lrow .ln span{color:var(--faint);font-size:12px}
+.lrow .chev{color:var(--faint)}
+.setrow{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line);width:100%;text-align:left}
+.setrow:first-of-type{border-top:0}
+.setrow .t{flex:1}
+.setrow .t span{display:block;color:var(--faint);font-size:12px}
+.palette{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.palette button{aspect-ratio:1;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.15)}
+.palette button.on{outline:3px solid var(--text);outline-offset:2px}
+.pick-item{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.pick-item .tagbtn{width:36px;height:36px;font-size:13px}
+.pick-item .t{flex:1;min-width:0}
+.pick-item .t b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick-item .t span{color:var(--faint);font-size:12px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick-item .seated{font-size:11px;color:var(--faint)}
+
+/* dialog + toast */
+.dialog{position:fixed;left:24px;right:24px;top:50%;transform:translate(0,-50%) scale(.96);background:var(--surface2);border-radius:18px;
+  padding:20px;z-index:31;opacity:0;pointer-events:none;transition:.15s}
+.dialog.show{opacity:1;pointer-events:auto;transform:translate(0,-50%)}
+.dialog h3{margin:0 0 8px;font-size:17px}
+.dialog p{margin:0 0 18px;color:var(--muted)}
+.dialog .acts{display:flex;justify-content:flex-end;gap:8px}
+#dlgScrim{z-index:30}
+.toast{position:fixed;left:50%;bottom:calc(90px + var(--sab));transform:translate(-50%,20px);background:#e9ecf1;color:#111;padding:10px 16px;
+  border-radius:12px;font-weight:600;font-size:14px;opacity:0;transition:.2s;z-index:40;pointer-events:none;max-width:86%;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.hidden{display:none!important}
+.banner{display:flex;gap:10px;align-items:flex-start;background:#1f2a3a;border:1px solid #2f4360;border-radius:var(--radius);
+  padding:12px;margin:0 0 10px;font-size:13.5px;color:#cfe0f5}
+.banner.warn{background:#33261a;border-color:#5c4127;color:#f3dcc2}
+.banner b{color:#fff}
+.banner .acts{display:flex;gap:6px;margin-top:8px}
+.banner .acts button{font-size:13px;font-weight:600;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.1)}
+.banner .acts button.go{background:var(--accent);color:#fff}
+.ok{color:var(--ok)} .bad{color:#f3a54b}
+.share-ico{display:inline-block;width:16px;height:16px;vertical-align:-3px}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- PLAYERS -->
+  <section id="view-players" class="view" style="display:flex;flex-direction:column;flex:1;min-height:0">
+    <header>
+      <div class="title-row">
+        <h1>Players<small id="countLbl"></small></h1>
+        <button class="icon-btn" id="sortBtn" aria-label="Sort">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h13M3 12h9M3 18h5M17 8v12m0 0l-3-3m3 3l3-3"/></svg>
+        </button>
+      </div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="q" type="search" placeholder="Search name, looks, notes…" autocomplete="off">
+        <button class="clear hidden" id="qClear" aria-label="Clear">×</button>
+      </div>
+    </header>
+    <div class="chips" id="chips"></div>
+    <main id="list"></main>
+  </section>
+
+  <!-- TABLE -->
+  <section id="view-table" class="view" style="display:none;flex-direction:column;flex:1;min-height:0">
+    <header>
+      <div class="title-row">
+        <h1>Table</h1>
+        <button class="btn ghost" id="clearTable">Clear seats</button>
+      </div>
+    </header>
+    <main class="table-wrap">
+      <div class="table-tools">
+        <div class="seg" id="seatSeg"></div>
+        <div class="seg" id="heroSeg"></div>
+        <div class="seg" id="dealerSeg"></div>
+      </div>
+      <div class="felt" id="felt"></div>
+    </main>
+  </section>
+
+  <!-- LABELS / SETTINGS -->
+  <section id="view-labels" class="view" style="display:none;flex-direction:column;flex:1;min-height:0">
+    <header><div class="title-row"><h1>Labels &amp; data</h1></div></header>
+    <main>
+      <div class="sec">
+        <h3>Color labels</h3>
+        <div id="labelRows"></div>
+        <button class="setrow" id="addLabel" style="color:var(--accent2);font-weight:600">＋ Add label</button>
+      </div>
+      <div class="sec">
+        <h3>Where your notes are saved</h3>
+        <div id="storageRows"></div>
+      </div>
+      <div class="sec">
+        <h3>Backup file</h3>
+        <button class="setrow" id="exportBtn"><div class="t"><span id="exportTitle" style="display:inline;color:var(--text);font-size:15px">Export backup</span><span id="lastBackupLbl">Save all players &amp; labels as a .json file</span></div><span class="chev">›</span></button>
+        <button class="setrow" id="importBtn"><div class="t">Import backup<span>Restore from a backup or auto-save file</span></div><span class="chev">›</span></button>
+      </div>
+      <div class="sec">
+        <h3>About</h3>
+        <div class="setrow" style="cursor:default"><div class="t">Private by design<span>No account and nothing is uploaded — your notes never leave this phone unless you export them.</span></div></div>
+      </div>
+    </main>
+  </section>
+
+  <button class="fab" id="fab" aria-label="Add player">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <nav>
+    <button data-tab="players" class="on">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M17 14.5c2.4.2 4 1.8 4.6 4.5"/></svg>
+      Players</button>
+    <button data-tab="table">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="12" rx="9" ry="6"/><circle cx="12" cy="3" r="1.3" fill="currentColor"/><circle cx="12" cy="21" r="1.3" fill="currentColor"/><circle cx="2" cy="12" r="1.3" fill="currentColor"/><circle cx="22" cy="12" r="1.3" fill="currentColor"/></svg>
+      Table</button>
+    <button data-tab="labels">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 12V4h8l10 10-8 8L3 12z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg>
+      Labels</button>
+  </nav>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"></div>
+<div class="scrim" id="dlgScrim"></div>
+<div class="dialog" id="dialog"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+// ---------- storage ----------
+const PALETTE=["#E5484D","#F76B15","#F5C518","#30A46C","#12A594","#0090FF","#3E63DD","#8E4EC6","#D6409F","#A18072","#8B8D98","#F2F2F2"];
+const DEFAULT_LABELS=[
+  {id:"l1",color:"#E5484D",name:"Maniac"},
+  {id:"l2",color:"#F76B15",name:"Aggro / LAG"},
+  {id:"l3",color:"#F5C518",name:"Calling station"},
+  {id:"l4",color:"#30A46C",name:"Fish / whale"},
+  {id:"l5",color:"#0090FF",name:"Nit / rock"},
+  {id:"l6",color:"#8E4EC6",name:"Strong reg"},
+  {id:"l7",color:"#D6409F",name:"Tilts easily"},
+  {id:"l8",color:"#8B8D98",name:"Unknown / new"}
+];
+const hasNative=typeof window.Native!=="undefined";
+const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const isStandalone=()=>window.navigator.standalone===true||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
+let S={version:1,labels:DEFAULT_LABELS.slice(),players:[],table:{size:9,hero:0,seats:[],dealer:"right"},sort:"recent",savedAt:0,lastBackup:0,backupSnooze:0};
+
+/* Storage.
+   Android app: JSON file in the app's private storage (+ optional auto-save copy to a file you pick).
+   iPhone / browser: IndexedDB, mirrored to localStorage; the newest copy wins on load. */
+const IDB={
+  db:null,
+  open(){ return new Promise(res=>{ try{ const r=indexedDB.open("playernotes",1);
+      r.onupgradeneeded=()=>r.result.createObjectStore("kv");
+      r.onsuccess=()=>{ IDB.db=r.result; res(IDB.db); }; r.onerror=()=>res(null);
+    }catch(e){ res(null); } }); },
+  get(){ return new Promise(res=>{ if(!IDB.db) return res(null); try{ const r=IDB.db.transaction("kv").objectStore("kv").get("data");
+      r.onsuccess=()=>res(r.result||null); r.onerror=()=>res(null); }catch(e){ res(null); } }); },
+  put(v){ return new Promise(res=>{ if(!IDB.db) return res(false); try{ const t=IDB.db.transaction("kv","readwrite"); t.objectStore("kv").put(v,"data");
+      t.oncomplete=()=>res(true); t.onerror=()=>res(false); t.onabort=()=>res(false); }catch(e){ res(false); } }); }
+};
+function parseData(raw){ if(!raw) return null; try{ const d=JSON.parse(raw); return d&&Array.isArray(d.players)?d:null; }catch(e){ return null; } }
+async function load(){
+  let d=null;
+  if(hasNative){ try{ d=parseData(Native.load()); }catch(e){} }
+  else{
+    let ls=null; try{ ls=parseData(localStorage.getItem("pn_data")); }catch(e){}
+    await IDB.open(); const idb=parseData(await IDB.get());
+    d=[ls,idb].filter(Boolean).sort((a,b)=>(b.savedAt||0)-(a.savedAt||0))[0]||null;
+  }
+  if(d) S=Object.assign(S,d);
+  if(!Array.isArray(S.labels)) S.labels=DEFAULT_LABELS.slice();
+  if(!S.table) S.table={size:9,hero:0,seats:[]};
+  if(!Array.isArray(S.table.seats)) S.table.seats=[];
+  if(S.table.dealer!=="left"&&S.table.dealer!=="right") S.table.dealer="right";
+}
+let saveTimer=null, saveFailShown=0;
+function saveFailed(){ if(Date.now()-saveFailShown>5000){ saveFailShown=Date.now(); toast("⚠ Could not save — export a backup!"); } }
+function save(now){
+  clearTimeout(saveTimer);
+  const run=()=>{ S.savedAt=Date.now(); const j=JSON.stringify(S);
+    if(hasNative){ try{ if(!Native.save(j)) saveFailed(); }catch(e){ saveFailed(); } return; }
+    let ok=false; try{ localStorage.setItem("pn_data",j); ok=true; }catch(e){}
+    IDB.put(j).then(r=>{ if(!r&&!ok) saveFailed(); });
+    askPersist(); };
+  if(now) run(); else saveTimer=setTimeout(run,250);
+}
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) save(true); });
+window.addEventListener("pagehide",()=>save(true));
+
+// Ask the browser to never clear our storage (iPhone home-screen apps and Chrome grant this).
+let persistState=null;
+async function askPersist(){
+  if(hasNative||persistState===true||!navigator.storage||!navigator.storage.persist) return;
+  try{ persistState=await navigator.storage.persisted(); if(!persistState) persistState=await navigator.storage.persist(); }catch(e){}
+}
+
+// ---------- helpers ----------
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const labelOf=p=>p&&p.labelId?S.labels.find(l=>l.id===p.labelId):null;
+const playerById=id=>S.players.find(p=>p.id===id);
+function initials(n){ const w=String(n||"?").trim().split(/\s+/).filter(Boolean); if(!w.length) return "?";
+  return (w.length>1? w[0][0]+w[w.length-1][0] : w[0].slice(0,2)).toUpperCase(); }
+function ago(t){ if(!t) return ""; const s=(Date.now()-t)/1000;
+  if(s<60) return "now"; if(s<3600) return Math.floor(s/60)+"m"; if(s<86400) return Math.floor(s/3600)+"h";
+  if(s<86400*30) return Math.floor(s/86400)+"d"; const d=new Date(t);
+  return d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:d.getFullYear()!==new Date().getFullYear()?"2-digit":undefined}); }
+function stamp(){ const d=new Date(); return d.toLocaleDateString(undefined,{day:"2-digit",month:"short"})+" "+d.toLocaleTimeString(undefined,{hour:"2-digit",minute:"2-digit"}); }
+function textOn(hex){ const c=hex.replace("#",""); const r=parseInt(c.substr(0,2),16),g=parseInt(c.substr(2,2),16),b=parseInt(c.substr(4,2),16);
+  return (r*299+g*587+b*114)/1000>170?"#111":"#fff"; }
+function tagStyle(l){ return l?`background:${l.color};color:${textOn(l.color)};text-shadow:none`:""; }
+
+let toastT;
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),1800); }
+window.toast=toast;
+
+// ---------- dialog ----------
+let dlgResolve=null;
+function confirmDlg(title,msg,okText,danger){
+  return new Promise(res=>{
+    dlgResolve=res;
+    $("#dialog").innerHTML=`<h3>${esc(title)}</h3><p>${esc(msg)}</p><div class="acts"><button class="btn ghost" data-a="0">Cancel</button><button class="btn ${danger?"danger":"primary"}" data-a="1">${esc(okText||"OK")}</button></div>`;
+    $("#dialog").classList.add("show"); $("#dlgScrim").classList.add("show");
+  });
+}
+function closeDlg(v){ $("#dialog").classList.remove("show"); $("#dlgScrim").classList.remove("show"); const r=dlgResolve; dlgResolve=null; if(r) r(v); }
+$("#dialog").addEventListener("click",e=>{ const b=e.target.closest("[data-a]"); if(b) closeDlg(b.dataset.a==="1"); });
+$("#dlgScrim").addEventListener("click",()=>closeDlg(false));
+
+// ---------- sheet ----------
+let sheetClose=null;
+function openSheet(html,{full=false,onClose=null}={}){
+  const sh=$("#sheet"); sh.className="sheet"+(full?" full":""); sh.innerHTML=html;
+  sheetClose=onClose;
+  requestAnimationFrame(()=>{ sh.classList.add("show"); $("#scrim").classList.add("show"); });
+  return sh;
+}
+function closeSheet(skipCb){
+  const sh=$("#sheet"); if(!sh.classList.contains("show")) return false;
+  const cb=sheetClose; sheetClose=null; if(cb&&!skipCb) cb();
+  sh.classList.remove("show"); $("#scrim").classList.remove("show");
+  if(document.activeElement) document.activeElement.blur();
+  return true;
+}
+$("#scrim").addEventListener("click",()=>closeSheet());
+
+// ---------- tabs ----------
+let tab="players";
+function setTab(t){
+  tab=t; document.querySelectorAll(".view").forEach(v=>v.style.display="none");
+  $("#view-"+t).style.display="flex";
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
+  $("#fab").classList.toggle("hidden",t!=="players");
+  render();
+}
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
+
+window.handleBack=function(){
+  if($("#dialog").classList.contains("show")){ closeDlg(false); return true; }
+  if(closeSheet()) return true;
+  if(tab!=="players"){ setTab("players"); return true; }
+  save(true); return false;
+};
+
+// ---------- players list ----------
+let filter="all", query="";
+const SORTS={recent:"Recently updated",name:"Name A–Z",label:"By label"};
+function visiblePlayers(){
+  const q=query.trim().toLowerCase();
+  let arr=S.players.filter(p=>{
+    if(filter==="none"&&p.labelId) return false;
+    if(filter!=="all"&&filter!=="none"&&p.labelId!==filter) return false;
+    if(!q) return true;
+    const l=labelOf(p);
+    return (p.name+" "+(p.desc||"")+" "+(p.note||"")+" "+(l?l.name:"")).toLowerCase().includes(q);
+  });
+  const li=id=>{ const i=S.labels.findIndex(l=>l.id===id); return i<0?999:i; };
+  if(S.sort==="name") arr.sort((a,b)=>a.name.localeCompare(b.name));
+  else if(S.sort==="label") arr.sort((a,b)=>li(a.labelId)-li(b.labelId)||a.name.localeCompare(b.name));
+  else arr.sort((a,b)=>(b.updated||0)-(a.updated||0));
+  return arr;
+}
+function renderChips(){
+  const cnt={}; let none=0; S.players.forEach(p=>{ if(p.labelId&&labelOf(p)) cnt[p.labelId]=(cnt[p.labelId]||0)+1; else none++; });
+  let h=`<button class="chip ${filter==="all"?"on":""}" data-f="all">All <span class="n">${S.players.length}</span></button>`;
+  S.labels.forEach(l=>{ h+=`<button class="chip ${filter===l.id?"on":""}" data-f="${l.id}"><span class="dot" style="background:${l.color}"></span>${esc(l.name)} <span class="n">${cnt[l.id]||0}</span></button>`; });
+  h+=`<button class="chip ${filter==="none"?"on":""}" data-f="none"><span class="dot none"></span>No label <span class="n">${none}</span></button>`;
+  $("#chips").innerHTML=h;
+}
+function renderList(){
+  renderChips();
+  $("#countLbl").textContent=S.players.length?S.players.length:"";
+  const arr=visiblePlayers();
+  if(!S.players.length){
+    $("#list").innerHTML=banners()+`<div class="empty"><b>No players yet</b>Tap <b style="display:inline;color:var(--accent2)">＋</b> to mark your first opponent.<br>Give them a color label and write what you see.</div>`; return;
+  }
+  let h=banners()+`<div class="sortbar"><span>${arr.length} shown</span><button id="sortInline">${SORTS[S.sort]} ▾</button></div>`;
+  if(!arr.length) h+=`<div class="empty"><b>No matches</b>Try another search or label.</div>`;
+  arr.forEach(p=>{
+    const l=labelOf(p);
+    h+=`<div class="card" data-id="${p.id}">
+      ${l?`<div class="bar" style="background:${l.color}"></div>`:""}
+      <button class="tagbtn ${l?"":"none"}" style="${tagStyle(l)}" data-quick="${p.id}">${esc(initials(p.name))}</button>
+      <div class="body">
+        <div class="top"><div class="name">${esc(p.name)}</div><div class="when">${ago(p.updated)}</div></div>
+        ${l?`<div class="lbl" style="color:${l.color}">${esc(l.name)}</div>`:""}
+        ${p.desc?`<div class="desc">${esc(p.desc)}</div>`:""}
+        ${p.note?`<div class="note">${esc(p.note)}</div>`:""}
+      </div></div>`;
+  });
+  $("#list").innerHTML=h;
+}
+$("#chips").addEventListener("click",e=>{ const c=e.target.closest("[data-f]"); if(!c) return; filter=c.dataset.f; renderList(); });
+$("#list").addEventListener("click",e=>{
+  const bn=e.target.closest("[data-banner]");
+  if(bn){ const a=bn.dataset.banner;
+    if(a==="backup") doExport();
+    else if(a==="later"){ S.backupSnooze=Date.now(); save(); renderList(); }
+    else if(a==="install") installApp();
+    else if(a==="autosave") Native.pickAutosave();
+    return; }
+  const q=e.target.closest("[data-quick]"); if(q){ e.stopPropagation(); quickLabel(q.dataset.quick); return; }
+  if(e.target.closest("#sortInline")){ sortSheet(); return; }
+  const c=e.target.closest(".card"); if(c) editPlayer(c.dataset.id);
+});
+$("#q").addEventListener("input",e=>{ query=e.target.value; $("#qClear").classList.toggle("hidden",!query); renderList(); });
+$("#qClear").addEventListener("click",()=>{ query=""; $("#q").value=""; $("#qClear").classList.add("hidden"); renderList(); });
+$("#sortBtn").addEventListener("click",sortSheet);
+function sortSheet(){
+  openSheet(`<div class="grab"></div><div class="sheet-body"><label class="f">Sort players</label>${Object.keys(SORTS).map(k=>`<button class="setrow" data-s="${k}"><div class="t">${SORTS[k]}</div>${S.sort===k?"✓":""}</button>`).join("")}</div>`);
+  $("#sheet").onclick=e=>{ const b=e.target.closest("[data-s]"); if(!b) return; S.sort=b.dataset.s; save(); closeSheet(); renderList(); };
+}
+
+// ---------- quick label ----------
+function labelGridQuick(sel){
+  return `<div class="grid">${S.labels.map(l=>`<button class="opt ${sel===l.id?"on":""}" data-l="${l.id}"><span class="sw" style="background:${l.color}"></span>${esc(l.name)}</button>`).join("")}
+    <button class="opt ${!sel?"on":""}" data-l=""><span class="sw none"></span>None</button></div>`;
+}
+function quickLabel(id,after){
+  const p=playerById(id); if(!p) return;
+  openSheet(`<div class="grab"></div><div class="quick"><div class="who">${esc(p.name)}</div>${labelGridQuick(p.labelId)}</div>`);
+  $("#sheet").onclick=e=>{ const b=e.target.closest("[data-l]"); if(!b) return;
+    p.labelId=b.dataset.l||null; p.updated=Date.now(); save(); closeSheet(); render(); if(after) after(); };
+}
+
+// ---------- editor ----------
+function editPlayer(id,opts={}){
+  const isNew=!id; const p=isNew?{id:uid(),name:opts.name||"",desc:"",note:"",labelId:null,created:Date.now(),updated:Date.now()}:playerById(id);
+  if(!p) return;
+  let sel=p.labelId;
+  const html=`
+    <div class="sheet-head">
+      <button class="icon-btn" data-x="close" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <h2>${isNew?"New player":"Edit player"}</h2>
+      <button class="btn primary" data-x="done">Save</button>
+    </div>
+    <div class="sheet-body">
+      <label class="f">Name / nickname</label>
+      <input class="inp" id="e-name" value="${esc(p.name)}" placeholder="e.g. Cap guy, Mike, Seat 4 lady" autocomplete="off">
+      <label class="f">Looks · where you see them</label>
+      <input class="inp" id="e-desc" value="${esc(p.desc)}" placeholder="e.g. Red hoodie, glasses · Casino Oslo 1/2" autocomplete="off">
+      <label class="f">Label</label>
+      <div class="labelgrid" id="e-labels"></div>
+      <label class="f">Notes</label>
+      <textarea class="inp" id="e-note" placeholder="Tendencies, tells, hands you've seen…">${esc(p.note)}</textarea>
+      <div class="note-tools">
+        <button data-ins="stamp">＋ Date/time line</button>
+        <button data-ins="3bets light">3bets light</button>
+        <button data-ins="limp-calls">limp-calls</button>
+        <button data-ins="overfolds to aggression">overfolds</button>
+        <button data-ins="never bluffs river">no river bluffs</button>
+        <button data-ins="tell: ">tell:</button>
+      </div>
+      ${isNew?"":`<div class="meta">Added ${new Date(p.created).toLocaleDateString()} · updated ${ago(p.updated)}${/\d/.test(ago(p.updated))?" ago":""}</div>
+      <div style="margin-top:22px"><button class="btn danger block" data-x="del">Delete player</button></div>`}
+    </div>`;
+  const drawLabels=()=>{ $("#e-labels").innerHTML=S.labels.map(l=>`<button class="lopt ${sel===l.id?"on":""}" data-l="${l.id}"><span class="sw" style="background:${l.color}"></span>${esc(l.name)}</button>`).join("")+
+      `<button class="lopt ${!sel?"on":""}" data-l=""><span class="sw none"></span>None</button>`; };
+  const commit=()=>{
+    const name=$("#e-name").value.trim(), desc=$("#e-desc").value.trim(), note=$("#e-note").value.replace(/\s+$/,"");
+    if(!name){ if(isNew&&!desc&&!note) return false; }
+    const changed=isNew||name!==p.name||desc!==(p.desc||"")||note!==(p.note||"")||sel!==p.labelId;
+    p.name=name||(desc?desc.slice(0,24):"Unnamed"); p.desc=desc; p.note=note; p.labelId=sel||null;
+    if(changed){ p.updated=Date.now(); if(isNew) S.players.push(p); save(); if(opts.onCreate&&isNew) opts.onCreate(p); }
+    return true;
+  };
+  openSheet(html,{full:true,onClose:()=>{ commit(); render(); }});
+  drawLabels();
+  if(isNew) setTimeout(()=>$("#e-name").focus(),250);
+  $("#sheet").onclick=async e=>{
+    const lb=e.target.closest("[data-l]"); if(lb){ sel=lb.dataset.l||null; drawLabels(); return; }
+    const ins=e.target.closest("[data-ins]");
+    if(ins){ const ta=$("#e-note"); const v=ins.dataset.ins;
+      if(v==="stamp"){ ta.value=(ta.value&&!ta.value.endsWith("\n")?ta.value+"\n":ta.value)+"["+stamp()+"] "; }
+      else { const cur=ta.value; const sep=!cur||/[\s\n]$/.test(cur)?"":(v.startsWith("tell")?"\n":", "); ta.value=cur+sep+v; }
+      ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); return; }
+    const x=e.target.closest("[data-x]"); if(!x) return;
+    if(x.dataset.x==="close"||x.dataset.x==="done"){ closeSheet(); if(x.dataset.x==="done") toast(isNew?"Player added":"Saved"); }
+    else if(x.dataset.x==="del"){
+      if(await confirmDlg("Delete player?",`"${p.name}" and their notes will be removed.`,"Delete",true)){
+        S.players=S.players.filter(q=>q.id!==p.id); S.table.seats=S.table.seats.map(s=>s===p.id?null:s);
+        save(); closeSheet(true); render(); toast("Deleted");
+      }
+    }
+  };
+}
+$("#fab").addEventListener("click",()=>editPlayer(null));
+
+// ---------- table ----------
+// The dealer sits mid-way along the left or right side. Seat 1 is on the dealer's left and
+// numbering runs clockwise (as seen from above), like a real casino table.
+const ovalPoint=a=>({x:50+41*Math.cos(a), y:48+42*Math.sin(a)});
+function dealerAngle(side){ return side==="left"?Math.PI:0; }
+// Spread seats evenly by distance along the rail (not by angle), so long sides don't bunch up.
+function seatPositions(n,side){
+  const d=dealerAngle(side), el=$("#felt"), W=(el&&el.clientWidth)||380, H=(el&&el.clientHeight)||540;
+  const N=720, cum=[0]; let prev=ovalPoint(d);
+  for(let k=1;k<=N;k++){ const q=ovalPoint(d+2*Math.PI*k/N); cum.push(cum[k-1]+Math.hypot((q.x-prev.x)*W,(q.y-prev.y)*H)); prev=q; }
+  const total=cum[N], pos=[];
+  for(let i=0;i<n;i++){
+    const target=total*(i+1)/(n+1); let k=1; while(k<N&&cum[k]<target) k++;
+    const f=(target-cum[k-1])/((cum[k]-cum[k-1])||1);
+    pos.push(ovalPoint(d+2*Math.PI*(k-1+f)/N));
+  }
+  return pos;
+}
+function renderTable(){
+  const T=S.table; const n=T.size;
+  while(T.seats.length<10) T.seats.push(null);
+  $("#seatSeg").innerHTML=`<button style="cursor:default;color:var(--faint)">Seats</button>`+[6,8,9,10].map(k=>`<button class="${n===k?"on":""}" data-size="${k}">${k}</button>`).join("");
+  $("#heroSeg").innerHTML=`<button class="${T.hero?"on":""}" data-hero="1">My seat: ${T.hero||"–"}</button>`;
+  const side=T.dealer||"right";
+  $("#dealerSeg").innerHTML=`<button style="cursor:default;color:var(--faint)">Dealer</button><button class="${side==="left"?"on":""}" data-dealer="left">◀ Left</button><button class="${side==="right"?"on":""}" data-dealer="right">Right ▶</button>`;
+  const pos=seatPositions(n,side), dp=ovalPoint(dealerAngle(side));
+  let h=`<div class="oval"></div><div class="center">${S.players.length} marked<br>players</div>
+    <button class="dealer" id="dealerMark" style="left:${dp.x}%;top:${dp.y}%" aria-label="Dealer – tap to switch side">
+      <span class="tray"><i style="background:#E5484D"></i><i style="background:#0090FF"></i><i style="background:#30A46C"></i><i style="background:#F2F2F2"></i><i style="background:#1c1c1c;box-shadow:inset 0 0 0 1px #555"></i></span>
+      <span class="dl">DEALER</span></button>`;
+  for(let i=0;i<n;i++){
+    const num=i+1, pid=T.seats[i], p=pid?playerById(pid):null, l=labelOf(p), hero=T.hero===num;
+    const cls=hero?"hero":(p?"":"vacant");
+    h+=`<button class="seat ${cls}" data-seat="${i}" style="left:${pos[i].x}%;top:${pos[i].y}%">
+      <span class="rw"><span class="num">${num}</span><span class="ring" style="${p&&!hero?(l?tagStyle(l):""):""}">${hero?"YOU":(p?esc(initials(p.name)):"+")}</span></span>
+      <span class="nm">${hero?"Hero":(p?esc(p.name):"Empty")}</span></button>`;
+  }
+  $("#felt").innerHTML=h;
+}
+function setDealer(side){ S.table.dealer=side; save(); renderTable(); }
+$("#dealerSeg").addEventListener("click",e=>{ const b=e.target.closest("[data-dealer]"); if(b) setDealer(b.dataset.dealer); });
+$("#seatSeg").addEventListener("click",e=>{ const b=e.target.closest("[data-size]"); if(!b) return; S.table.size=+b.dataset.size; if(S.table.hero>S.table.size) S.table.hero=0; save(); renderTable(); });
+$("#heroSeg").addEventListener("click",()=>{
+  const n=S.table.size;
+  openSheet(`<div class="grab"></div><div class="sheet-body"><label class="f">Which seat are you in?</label>
+    <div class="seg" style="flex-wrap:wrap">${Array.from({length:n},(_,i)=>`<button class="${S.table.hero===i+1?"on":""}" data-h="${i+1}">${i+1}</button>`).join("")}<button class="${!S.table.hero?"on":""}" data-h="0">None</button></div></div>`);
+  $("#sheet").onclick=e=>{ const b=e.target.closest("[data-h]"); if(!b) return; const h=+b.dataset.h; S.table.hero=h; if(h) S.table.seats[h-1]=null; save(); closeSheet(); renderTable(); };
+});
+$("#clearTable").addEventListener("click",async()=>{
+  if(!S.table.seats.some(Boolean)) return;
+  if(await confirmDlg("Clear all seats?","Players stay saved — they're only removed from the table.","Clear")){ S.table.seats=S.table.seats.map(()=>null); save(); renderTable(); }
+});
+$("#felt").addEventListener("click",e=>{ if(e.target.closest("#dealerMark")){ setDealer(S.table.dealer==="left"?"right":"left"); toast("Dealer moved "+S.table.dealer); return; } const s=e.target.closest("[data-seat]"); if(s) seatTap(+s.dataset.seat); });
+
+function seatTap(i){
+  const T=S.table, num=i+1;
+  if(T.hero===num){ toast("That's your seat"); return; }
+  const p=T.seats[i]?playerById(T.seats[i]):null;
+  if(p){
+    const l=labelOf(p);
+    openSheet(`<div class="grab"></div><div class="quick">
+      <div class="who" style="display:flex;align-items:center;gap:10px"><span class="tagbtn ${l?"":"none"}" style="width:36px;height:36px;font-size:13px;${tagStyle(l)}">${esc(initials(p.name))}</span>
+        <span style="flex:1;min-width:0"><span style="display:block">${esc(p.name)}</span><span style="font-size:12px;color:var(--faint);font-weight:500">Seat ${num}${p.desc?" · "+esc(p.desc):""}</span></span></div>
+      ${p.note?`<div style="background:var(--bg);border-radius:12px;padding:10px 12px;color:#c9ced6;font-size:13.5px;white-space:pre-wrap;max-height:130px;overflow:auto;margin-bottom:14px">${esc(p.note)}</div>`:""}
+      ${labelGridQuick(p.labelId)}
+      <div class="row" style="margin-top:16px"><button class="btn primary" style="flex:1" data-a="open">Notes / edit</button><button class="btn" data-a="swap">Swap</button><button class="btn danger" data-a="clear">Leave</button></div>
+    </div>`);
+    $("#sheet").onclick=e=>{
+      const lb=e.target.closest("[data-l]"); if(lb){ p.labelId=lb.dataset.l||null; p.updated=Date.now(); save(); closeSheet(); renderTable(); return; }
+      const a=e.target.closest("[data-a]"); if(!a) return;
+      if(a.dataset.a==="open"){ closeSheet(); setTimeout(()=>editPlayer(p.id),200); }
+      else if(a.dataset.a==="clear"){ T.seats[i]=null; save(); closeSheet(); renderTable(); }
+      else if(a.dataset.a==="swap"){ closeSheet(); setTimeout(()=>pickForSeat(i),200); }
+    };
+  } else pickForSeat(i);
+}
+function pickForSeat(i){
+  const T=S.table; let q="";
+  const draw=()=>{
+    const ql=q.trim().toLowerCase();
+    const arr=S.players.filter(p=>!ql||(p.name+" "+(p.desc||"")+" "+(p.note||"")).toLowerCase().includes(ql)).sort((a,b)=>(b.updated||0)-(a.updated||0)).slice(0,60);
+    $("#pickList").innerHTML=`<button class="pick-item" data-new="1"><span class="tagbtn none" style="font-size:20px">＋</span><div class="t"><b style="color:var(--accent2)">New player${q.trim()?`: “${esc(q.trim())}”`:""}</b><span>Create and seat them here</span></div></button>`+
+      arr.map(p=>{ const l=labelOf(p); const at=T.seats.indexOf(p.id);
+        return `<button class="pick-item" data-p="${p.id}"><span class="tagbtn ${l?"":"none"}" style="${tagStyle(l)}">${esc(initials(p.name))}</span>
+        <div class="t"><b>${esc(p.name)}</b><span>${esc([l?l.name:"",p.desc].filter(Boolean).join(" · ")||"No label")}</span></div>${at>=0&&at<T.size?`<span class="seated">seat ${at+1}</span>`:""}</button>`; }).join("");
+  };
+  openSheet(`<div class="sheet-head"><h2>Seat ${i+1}</h2><button class="btn ghost" data-x="close">Cancel</button></div>
+    <div style="padding:10px 16px 0"><div class="search" style="margin:0"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="pickQ" placeholder="Search or type a new name" autocomplete="off"></div></div>
+    <div class="sheet-body" id="pickList" style="padding-top:6px"></div>`,{full:true});
+  draw();
+  $("#pickQ").addEventListener("input",e=>{ q=e.target.value; draw(); });
+  $("#sheet").onclick=e=>{
+    if(e.target.closest("[data-x]")){ closeSheet(); return; }
+    const pb=e.target.closest("[data-p]");
+    if(pb){ const id=pb.dataset.p; T.seats=T.seats.map(s=>s===id?null:s); T.seats[i]=id; save(); closeSheet(); renderTable(); return; }
+    if(e.target.closest("[data-new]")){ const nm=q.trim(); closeSheet(true);
+      setTimeout(()=>editPlayer(null,{name:nm,onCreate:p=>{ T.seats[i]=p.id; save(); }}),200); }
+  };
+}
+
+// ---------- labels ----------
+function renderLabels(){
+  const cnt={}; S.players.forEach(p=>{ if(p.labelId) cnt[p.labelId]=(cnt[p.labelId]||0)+1; });
+  $("#labelRows").innerHTML=S.labels.map(l=>`<button class="lrow" style="width:100%;text-align:left" data-edit="${l.id}"><span class="sw" style="background:${l.color}"></span>
+    <span class="ln"><b>${esc(l.name)}</b><span>${cnt[l.id]||0} player${cnt[l.id]===1?"":"s"}</span></span><span class="chev">›</span></button>`).join("")||`<div style="color:var(--faint);padding:10px 0">No labels</div>`;
+}
+$("#labelRows").addEventListener("click",e=>{ const b=e.target.closest("[data-edit]"); if(b) editLabel(b.dataset.edit); });
+$("#addLabel").addEventListener("click",()=>editLabel(null));
+function editLabel(id){
+  const isNew=!id; const l=isNew?{id:"l"+uid(),color:PALETTE[S.labels.length%PALETTE.length],name:""}:S.labels.find(x=>x.id===id);
+  let color=l.color;
+  const idx=S.labels.indexOf(l);
+  openSheet(`<div class="grab"></div><div class="sheet-body">
+    <label class="f">Label name</label><input class="inp" id="l-name" value="${esc(l.name)}" placeholder="e.g. Loose-passive" autocomplete="off">
+    <label class="f">Color</label><div class="palette" id="l-pal"></div>
+    <div class="row" style="margin-top:20px">
+      ${isNew?"":`<button class="btn danger" data-a="del">Delete</button>`}
+      ${!isNew&&idx>0?`<button class="btn" data-a="up">↑</button>`:""}
+      ${!isNew&&idx<S.labels.length-1?`<button class="btn" data-a="down">↓</button>`:""}
+      <button class="btn primary" style="flex:1" data-a="save">${isNew?"Add label":"Save"}</button>
+    </div></div>`);
+  const drawPal=()=>{ $("#l-pal").innerHTML=PALETTE.map(c=>`<button data-c="${c}" class="${c===color?"on":""}" style="background:${c}"></button>`).join(""); };
+  drawPal();
+  $("#sheet").onclick=async e=>{
+    const c=e.target.closest("[data-c]"); if(c){ color=c.dataset.c; drawPal(); return; }
+    const a=e.target.closest("[data-a]"); if(!a) return;
+    if(a.dataset.a==="save"){ const nm=$("#l-name").value.trim(); if(!nm){ toast("Give the label a name"); return; }
+      l.name=nm; l.color=color; if(isNew) S.labels.push(l); save(); closeSheet(); render(); }
+    else if(a.dataset.a==="up"||a.dataset.a==="down"){ const j=idx+(a.dataset.a==="up"?-1:1); S.labels.splice(idx,1); S.labels.splice(j,0,l); save(); closeSheet(); render(); }
+    else if(a.dataset.a==="del"){
+      const n=S.players.filter(p=>p.labelId===l.id).length;
+      if(await confirmDlg("Delete label?",n?`${n} player${n===1?"":"s"} will become unlabeled. Their notes are kept.`:"This label isn't used by anyone.","Delete",true)){
+        S.labels=S.labels.filter(x=>x.id!==l.id); S.players.forEach(p=>{ if(p.labelId===l.id) p.labelId=null; });
+        if(filter===l.id) filter="all"; save(); closeSheet(); render(); }
+    }
+  };
+}
+
+// ---------- backup ----------
+async function doExport(){
+  const d=new Date(); const fn=`player-notes-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}.json`;
+  const j=JSON.stringify(Object.assign({},S,{app:"live-player-notes",exported:Date.now()}),null,1);
+  if(hasNative){ Native.exportBackup(j,fn); return; }
+  let file=null; try{ file=new File([j],fn,{type:"application/json"}); }catch(e){}
+  // iPhone: the share sheet has "Save to Files" (iCloud Drive or On My iPhone)
+  if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file],title:"Player Notes backup"}); onBackupSaved(); }
+    catch(e){ if(e&&e.name!=="AbortError") toast("Could not share file"); }
+    return;
+  }
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([j],{type:"application/json"})); a.download=fn;
+  document.body.appendChild(a); a.click(); a.remove(); onBackupSaved();
+}
+window.onBackupSaved=function(){ S.lastBackup=Date.now(); save(true); toast("Backup saved"); render(); };
+$("#exportBtn").addEventListener("click",doExport);
+$("#importBtn").addEventListener("click",()=>{
+  if(hasNative) Native.importBackup();
+  else { const i=document.createElement("input"); i.type="file"; i.accept=".json,application/json,text/plain";
+    i.onchange=()=>{ if(!i.files[0]) return; const r=new FileReader(); r.onload=()=>onImported(r.result); r.readAsText(i.files[0]); }; i.click(); }
+});
+
+// ---------- install + storage status ----------
+let deferredInstall=null;
+window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredInstall=e; render(); });
+function installApp(){
+  if(deferredInstall){ deferredInstall.prompt(); deferredInstall.userChoice.finally(()=>{ deferredInstall=null; render(); }); return; }
+  openSheet(`<div class="grab"></div><div class="sheet-body">
+    <label class="f">Add to Home Screen</label>
+    <p style="margin:0 0 12px">1. Tap the <b>Share</b> button <svg class="share-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg> in Safari's toolbar.</p>
+    <p style="margin:0 0 12px">2. Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.</p>
+    <p style="margin:0 0 18px">3. Open <b>Player Notes</b> from your home screen from now on. It works offline and your notes are kept on the phone.</p>
+    <p style="margin:0;color:var(--muted);font-size:13px">Notes you add here in Safari stay in Safari and don't carry over to the home-screen app. Add it first, or use Export/Import to move them.</p></div>`);
+}
+function banners(){
+  let h="";
+  if(!hasNative&&!isStandalone()&&(isIOS||deferredInstall)){
+    h+=`<div class="banner"><div><b>Install Player Notes on this phone</b><br>Add it to your Home Screen so it opens like an app, works offline and keeps your notes safe.
+      <div class="acts"><button class="go" data-banner="install">${deferredInstall?"Install":"Show me how"}</button></div></div></div>`;
+  }
+  const autosaveOn=hasNative&&Native.autosaveName&&Native.autosaveName();
+  // Nag only once notes are worth protecting: no backup for 7+ days since the last backup (or since the first player was added).
+  const since=S.lastBackup||Math.min(...S.players.map(p=>p.created||Date.now()));
+  const stale=S.players.length>=3&&!autosaveOn&&(S.savedAt||0)>(S.lastBackup||0)&&Date.now()-since>7*864e5&&Date.now()-(S.backupSnooze||0)>3*864e5;
+  if(stale){
+    h+=`<div class="banner warn"><div><b>${S.lastBackup?`Last backup ${ago(S.lastBackup)} ago`:"No backup yet"}</b><br>${hasNative?"Turn on auto-save to a file, or save a backup, so your notes survive losing or resetting the phone.":"Save a backup to Files so your notes survive losing or resetting the phone."}
+      <div class="acts">${hasNative?`<button class="go" data-banner="autosave">Turn on auto-save</button><button data-banner="backup">Back up once</button>`:`<button class="go" data-banner="backup">Back up now</button>`}<button data-banner="later">Later</button></div></div></div>`;
+  }
+  return h;
+}
+async function renderStorage(){
+  const el=$("#storageRows"); if(!el) return;
+  const la=S.lastBackup?ago(S.lastBackup):"", last=S.lastBackup?`Last backup file: ${la==="now"?"just now":la+(/\d/.test(la)&&!/\s/.test(la)?" ago":"")}`:"No backup file saved yet";
+  $("#lastBackupLbl").textContent=last;
+  if(hasNative){
+    $("#exportTitle").textContent="Save a backup copy";
+    const name=Native.autosaveName?Native.autosaveName():"";
+    el.innerHTML=`<div class="setrow" style="cursor:default"><div class="t"><span class="ok" style="display:inline;font-size:15px">✓</span> On this phone<span>Saved instantly to the app's own storage every time you make a change.</span></div></div>
+      <button class="setrow" data-st="auto"><div class="t">Auto-save copy to a file: <b class="${name?"ok":"bad"}">${name?"On":"Off"}</b>
+        <span>${name?`Always up to date in “${esc(name)}”. Survives uninstalling — restore it with Import backup.`:"Keep an always-up-to-date copy in a file you choose (e.g. in Documents or Download). It survives uninstalling the app."}</span></div><span class="chev">›</span></button>
+      ${name?`<button class="setrow" data-st="autooff"><div class="t" style="color:var(--muted)">Stop auto-saving to that file</div></button>`:""}`;
+    return;
+  }
+  $("#exportTitle").textContent=isIOS?"Save backup to Files":"Export backup";
+  let persisted=persistState;
+  try{ if(navigator.storage&&navigator.storage.persisted) persisted=await navigator.storage.persisted(); }catch(e){}
+  const installed=isStandalone();
+  const safe=installed||persisted;
+  el.innerHTML=`<div class="setrow" style="cursor:default"><div class="t"><span class="ok" style="display:inline;font-size:15px">✓</span> On this ${isIOS?"iPhone":"device"}<span>Saved instantly in the app's storage on this phone every time you make a change. Nothing is uploaded.</span></div></div>
+    <div class="setrow" style="cursor:default"><div class="t">Protected from automatic clearing: <b class="${safe?"ok":"bad"}">${safe?"Yes":"Not yet"}</b>
+      <span>${safe?(installed?"Running from your Home Screen, so the phone keeps your notes.":"This browser has marked the storage as persistent."):(isIOS?"Safari may clear website data you don't open for a while. Add Player Notes to your Home Screen to protect it.":"Install the app or save backups regularly.")}</span></div>
+      ${!installed&&(isIOS||deferredInstall)?`<button class="btn" data-st="install" style="flex:none">How</button>`:""}</div>`;
+}
+$("#storageRows").addEventListener("click",e=>{ const b=e.target.closest("[data-st]"); if(!b) return;
+  if(b.dataset.st==="auto") Native.pickAutosave();
+  else if(b.dataset.st==="autooff"){ Native.clearAutosave(); toast("Auto-save file turned off"); render(); }
+  else if(b.dataset.st==="install") installApp(); });
+window.onAutosaveSet=function(name){ if(name){ S.lastBackup=Date.now(); save(true); toast("Auto-saving to “"+name+"”"); } render(); };
+window.onImported=async function(text){
+  if(!text) return;
+  let d; try{ d=JSON.parse(text); }catch(e){ toast("That file isn't a valid backup"); return; }
+  if(!d||!Array.isArray(d.players)||!Array.isArray(d.labels)){ toast("That file isn't a valid backup"); return; }
+  if(!await confirmDlg("Restore backup?",`Replace your current ${S.players.length} players with ${d.players.length} from the backup?`,"Restore",true)) return;
+  S={version:1,labels:d.labels,players:d.players,table:Object.assign({size:9,hero:0,seats:[],dealer:"right"},d.table||{}),sort:d.sort||"recent",savedAt:0,lastBackup:d.lastBackup||0,backupSnooze:0};
+  filter="all"; save(true); render(); toast(`Restored ${d.players.length} players`);
+};
+
+// ---------- boot ----------
+function render(){ if(tab==="players") renderList(); else if(tab==="table") renderTable(); else { renderLabels(); renderStorage(); } }
+load().then(()=>{ render(); askPersist(); });
+if(!hasNative&&"serviceWorker" in navigator&&(location.protocol==="https:"||location.hostname==="localhost")){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+window.addEventListener("resize",()=>{ if(tab==="table") renderTable(); });
+</script>
+</body>
+</html>

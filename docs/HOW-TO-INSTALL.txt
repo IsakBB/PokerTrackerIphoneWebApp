@@ -1,0 +1,54 @@
+PLAYER NOTES FOR iPHONE: SETUP (about 5 minutes, one time)
+===========================================================
+
+iPhones only install apps from the App Store, so Player Notes runs as a
+home-screen web app instead. To install it, these files need to be online
+once at an https:// address. After that it opens from your home screen,
+works offline and keeps your notes on the phone.
+
+Your notes are never uploaded. The website only holds the app itself.
+Anyone who opens the link gets an empty copy with their own storage.
+
+
+STEP 1: PUT THE FILES ONLINE (free). Pick one option.
+
+  Option A: Netlify (easiest, from a computer)
+    1. Unzip this file. You get a folder with index.html in it.
+    2. Go to https://app.netlify.com/drop and create a free account.
+    3. Drag the unzipped folder onto the page.
+    4. You get a link like https://something.netlify.app
+       (you can rename it under Site settings).
+
+  Option B: GitHub Pages
+    1. Create a free account at github.com.
+    2. Create a new public repository, e.g. "player-notes".
+    3. Choose "uploading an existing file" and upload everything in the
+       unzipped folder, including the "icons" folder.
+    4. Go to Settings -> Pages. Under Branch pick "main" and "/ (root)",
+       then Save.
+    5. After about a minute your link is
+       https://YOUR-NAME.github.io/player-notes/
+
+
+STEP 2: INSTALL ON THE iPHONE
+    1. Open the link in Safari. It must be Safari.
+    2. Tap the Share button (the square with the arrow pointing up).
+    3. Tap "Add to Home Screen", then "Add".
+    4. From now on, always open Player Notes from the home-screen icon.
+       Notes added in a Safari tab are kept separately from the app.
+
+
+WHERE ARE MY NOTES SAVED?
+  - On the iPhone, inside the app's own storage. Every change is saved
+    instantly. Home-screen apps are protected from Safari's automatic
+    clean-up of website data.
+  - Deleting the home-screen icon deletes the notes too. So do "Clear
+    History and Website Data" in Safari settings and resetting the phone.
+    Use "Save backup to Files" (Labels tab) now and then. It saves a .json
+    file to iCloud Drive or On My iPhone, and "Import backup" restores it.
+  - The same backup file works in the Android app, and the other way round.
+
+
+UPDATES
+  Replace the files at the same link. The app picks up the new version
+  the next time it's opened with internet.
